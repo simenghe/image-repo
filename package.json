@@ -1,0 +1,25 @@
+{
+  "name": "image-repo",
+  "version": "1.0.0",
+  "description": "Shopify Developer Intern Challenge",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simenghe/image-repo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/simenghe/image-repo/issues"
+  },
+  "homepage": "https://github.com/simenghe/image-repo#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.1"
+  }
+}
