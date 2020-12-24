@@ -3,6 +3,7 @@ import { Router } from "express";
 const router = Router();
 import { projectId, keyFilename } from "../creds.js";
 const storage = new Storage({ projectId, keyFilename });
+const bucketName = "image-repo-bucket";
 
 router.get("/", async (req, res) => {
   res.send("Image Route Reached");
@@ -23,6 +24,11 @@ async function listBuckets() {
   } catch (err) {
     console.error("ERROR:", err);
   }
+}
+
+async function getImages() {
+  const imageRepoBucket = storage.bucket(bucketName);
+
 }
 
 export default router;
