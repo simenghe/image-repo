@@ -1,12 +1,18 @@
 import { Storage } from "@google-cloud/storage";
+import { format } from "util";
 import { Router } from "express";
-import fs from "fs";
-import path from "path";
+import Multer from "multer";
 const router = Router();
 import { projectId, keyFilename } from "../creds.js";
 const storage = new Storage({ projectId, keyFilename });
-const bucketName = "image-repo-bucket";
-const sampleImageLocation = path.resolve("../sample_images/diabolo.jpg");
+const bucket = storage.bucket("image-repo-bucket");
+
+const multer = Multer({
+  storage: Multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+});
 
 router.get("/", async (req, res) => {
   await testUpload();
@@ -14,8 +20,34 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/all", async (req, res) => {
-  await listBuckets();
-  res.send("Image Route Reached");
+  const file = await getImages();
+  res.send(file);
+});
+
+// Process the file upload and upload to Google Cloud Storage.
+router.post("/upload", multer.single("file"), (req, res, next) => {
+  if (!req.file) {
+    res.status(400).send("No file uploaded.");
+    return;
+  }
+
+  // Create a new blob in the bucket and upload the file data.
+  const blob = bucket.file(req.file.originalname);
+  const blobStream = blob.createWriteStream();
+
+  blobStream.on("error", (err) => {
+    next(err);
+  });
+
+  blobStream.on("finish", () => {
+    // The public URL can be used to directly access the file via HTTP.
+    const publicUrl = format(
+      `https://storage.googleapis.com/${bucket.name}/${blob.name}`
+    );
+    res.status(200).send(publicUrl);
+  });
+
+  blobStream.end(req.file.buffer);
 });
 
 async function listBuckets() {
@@ -31,15 +63,15 @@ async function listBuckets() {
 }
 
 async function getImages() {
-  const imageRepoBucket = storage.bucket(bucketName);
+  const [files, queryForPage2] = await bucket.getFiles();
+  console.log(files);
+  console.log(queryForPage2);
+  return files;
 }
 
 async function testUpload() {
-  const imageRepoBucket = storage.bucket(bucketName);
   // Need to write the file onto disk temporarily to upload
-  console.log(imageRepoBucket.name);
-  imageRepoBucket.upload(sampleImageLocation);
-  // imageRepoBucket.upload()
+  console.log(bucket.name);
 }
 
 export default router;
