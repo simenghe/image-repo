@@ -15,7 +15,6 @@ const multer = Multer({
 });
 
 router.get("/", async (req, res) => {
-  await testUpload();
   res.send("Image Route Reached");
 });
 
@@ -67,11 +66,6 @@ async function getImages() {
   console.log(files);
   console.log(queryForPage2);
   return files;
-}
-
-async function testUpload() {
-  // Need to write the file onto disk temporarily to upload
-  console.log(bucket.name);
 }
 
 export default router;

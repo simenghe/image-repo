@@ -11,6 +11,7 @@ app.use(express.urlencoded({ extended: false }));
 app.set("view engine", "pug");
 app.use(bodyParser.json());
 
+app.use('/', express.static('public'));
 // Routes
 app.use("/images", imageRouter);
 
