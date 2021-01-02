@@ -1,4 +1,54 @@
 <html>
-  <head></head>
-  <h1>Shopify Image-repo</h1>
+  <head>
+    <link rel="stylesheet" href="index.css" />
+    <link rel="shortcut icon" href="#" />
+  </head>
+  <script>
+    function redirect() {
+      console.log("Redirecting to home page!");
+      console.log(document.baseURI);
+      window.location.href = document.baseURI;
+      return false;
+    }
+
+    async function getAllImages() {
+      const googleBucketURL = `https://storage.googleapis.com/`;
+      const resp = await fetch("/images/all");
+      const data = await resp.json();
+      console.log(data);
+      const imageURLS = [];
+      if (data) {
+        data.forEach((file) => {
+          const imageURL = `${googleBucketURL}${file.bucket.id}/${file.id}`;
+          console.log(imageURL);
+          imageURLS.push(imageURL);
+        });
+      }
+      return imageURLS;
+    }
+
+    getAllImages();
+  </script>
+  <header>
+    <h1 class="headerTitle">Shopify Image-Repo</h1>
+  </header>
+  <main>
+    <div>
+      <h2>Upload File</h2>
+      <form action="/images/upload" enctype="multipart/form-data" method="POST">
+        <input type="file" name="file" accept="image/*" />
+        <input onsubmit="redirect()" type="submit" value="Upload Photo" />
+      </form>
+    </div>
+    <div class="card">
+      <h1>Title - Card 3</h1>
+      <p>Short Description.</p>
+      <div class="visual">
+        <img
+          sizes="medium"
+          src="https://storage.googleapis.com/image-repo-bucket/diabolo.jpg"
+        />
+      </div>
+    </div>
+  </main>
 </html>

@@ -19,8 +19,8 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/all", async (req, res) => {
-  const file = await getImages();
-  res.send(file);
+  const files = await getImages();
+  res.send(files);
 });
 
 // Process the file upload and upload to Google Cloud Storage.
@@ -43,10 +43,11 @@ router.post("/upload", multer.single("file"), (req, res, next) => {
     const publicUrl = format(
       `https://storage.googleapis.com/${bucket.name}/${blob.name}`
     );
-    res.status(200).send(publicUrl);
+    // res.status(200).send(publicUrl);
   });
 
   blobStream.end(req.file.buffer);
+  res.redirect('/');
 });
 
 async function listBuckets() {

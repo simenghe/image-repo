@@ -1,0 +1,50 @@
+body {
+  display: grid;
+  height: 100vh;
+  grid-template-rows: auto 1fr auto;
+}
+header {
+  background: lightpink;
+  padding: 2rem;
+  justify-content: center;
+  justify-items: center;
+}
+main {
+  background: white;
+}
+
+
+/* div {
+  display: grid;
+  place-items: center;
+  background: lightpink;
+} */
+
+body {
+  font-family: system-ui, sans-serif;
+}
+
+footer {
+  background: wheat;
+  padding: 2rem;
+  text-align: center;
+}
+
+.headerTitle {
+  text-align: center;
+}
+
+.visual {
+  height: 300px;
+  width: 100%;
+  background: wheat;
+  margin: 0.5rem 0;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: red;
+  padding: 1rem;
+}
