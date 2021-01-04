@@ -9,3 +9,5 @@ Shopify Developer Intern Challenge
 * Add OpenCV magic for filters
 
 # User accounts, public and private scope of images
+* Create multiple storage buckets for users
+
