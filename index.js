@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import imageRouter from "./routes/images.js";
+import storageRouter from './routes/storage.js';
 import bodyParser from "body-parser";
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -14,6 +15,7 @@ app.use(bodyParser.json());
 app.use('/', express.static('public'));
 // Routes
 app.use("/images", imageRouter);
+app.use("/storage", storageRouter);
 
 app.get("/", async (req, res) => {
   res.send("Default Route Reached");
