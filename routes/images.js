@@ -23,6 +23,17 @@ router.get("/all", async (req, res) => {
   res.send(files);
 });
 
+router.get("/getfilesurls", async (req, res) => {
+  const googleBucketURL = `https://storage.googleapis.com/`;
+  try {
+    const files = await getImages();
+    const filesURLs = files.map(file => `${googleBucketURL}${file.bucket.id}/${file.id}`);
+    return res.send(filesURLs);
+  } catch (err) {
+    return res.send(403).json("Getting File Error!");
+  }
+});
+
 // Process the file upload and upload to Google Cloud Storage.
 router.post("/upload", multer.single("file"), (req, res, next) => {
   if (!req.file) {
@@ -64,8 +75,6 @@ async function listBuckets() {
 
 async function getImages() {
   const [files, queryForPage2] = await bucket.getFiles();
-  console.log(files);
-  console.log(queryForPage2);
   return files;
 }
 
