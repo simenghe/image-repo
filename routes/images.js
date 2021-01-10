@@ -24,23 +24,40 @@ router.get("/all", async (req, res) => {
 });
 
 router.get("/getuserurls", async (req, res) => {
-  const config = {
-    action: 'list',
-    expires: '03-17-2025',
-  }
-  bucket.getSignedUrl(config, async (err, url) => {
-    if(!err){
-      console.log(url);
+  const fileconfig = {
+    action: "read",
+    expires: "03-17-2025",
+  };
+  try {
+    const files = await bucket.getFiles();
+    const fileList = files[0];
+    const fileUrls = [];
+    for (const file of fileList) {
+      const signedUrl = await file.getSignedUrl(fileconfig);
+      const metadata = await file.getMetadata();
+      const timeUpdated = metadata[0].updated;
+      fileUrls.push({
+        signedUrl: signedUrl[0],
+        id: file.id,
+        name: file.name,
+        date: timeUpdated,
+      });
+      // console.log(signedUrl[0]);
     }
-  });
-  res.send("")
-})
+    return res.send(fileUrls);
+  } catch (err) {
+    console.log(err);
+    return res.send(401).json(err);
+  }
+});
 
 router.get("/getfilesurls", async (req, res) => {
   const googleBucketURL = `https://storage.googleapis.com/`;
   try {
     const files = await getImages();
-    const filesURLs = files.map(file => `${googleBucketURL}${file.bucket.id}/${file.id}`);
+    const filesURLs = files.map(
+      (file) => `${googleBucketURL}${file.bucket.id}/${file.id}`
+    );
     return res.send(filesURLs);
   } catch (err) {
     return res.send(403).json("Getting File Error!");
@@ -71,7 +88,7 @@ router.post("/upload", multer.single("file"), (req, res, next) => {
   });
 
   blobStream.end(req.file.buffer);
-  res.redirect('/');
+  res.redirect("/");
 });
 
 async function listBuckets() {
