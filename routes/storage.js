@@ -27,4 +27,15 @@ router.get("/createBucket", async (req, res) => {
         return res.send(err);
     }
 });
+
+router.post("/testauth", async (req, res) => {
+    console.log(req.headers.uid);
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token == null) return res.sendStatus(401);
+    console.log(token);
+    console.log(req.body);
+    return res.send(req.headers.Authorization);
+});
+
 export default router
