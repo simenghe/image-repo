@@ -23,6 +23,19 @@ router.get("/all", async (req, res) => {
   res.send(files);
 });
 
+router.get("/getuserurls", async (req, res) => {
+  const config = {
+    action: 'list',
+    expires: '03-17-2025',
+  }
+  bucket.getSignedUrl(config, async (err, url) => {
+    if(!err){
+      console.log(url);
+    }
+  });
+  res.send("")
+})
+
 router.get("/getfilesurls", async (req, res) => {
   const googleBucketURL = `https://storage.googleapis.com/`;
   try {
