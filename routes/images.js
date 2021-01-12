@@ -1,12 +1,14 @@
 import { Storage } from "@google-cloud/storage";
 import { format } from "util";
 import { Router } from "express";
+import publicimagemodel from "../models/publicImage.js";
 import Multer from "multer";
 import { createBucket, bucketExists } from "../storage/storage.js";
 const router = Router();
 import { projectId, keyFilename } from "../creds.js";
 const storage = new Storage({ projectId, keyFilename });
 const bucket = storage.bucket("image-repo-bucket");
+
 
 const multer = Multer({
   storage: Multer.memoryStorage(),
@@ -19,15 +21,43 @@ router.get("/", async (req, res) => {
   res.send("Image Route Reached");
 });
 
-router.get("/all", async (req, res) => {
-  const files = await getImages();
-  res.send(files);
+// Go through by bucket
+router.get("/getpublicurls", async (req, res) => {
+  try {
+    const buckets = await storage.getBuckets();
+    const publicFiles = [];
+    console.log(buckets);
+    for (const buck of buckets[0]) {
+      const files = await buck.getFiles();
+      for (const file of files[0]) {
+        const isPublic = await file.isPublic();
+        console.log(isPublic[0]);
+        if (isPublic[0]) {
+          publicFiles.push({
+            id: file.id,
+            name: file.name,
+            url: file.publicUrl(),
+            date: file.metadata.updated,
+            size: file.metadata.size,
+          })
+        }
+      }
+    }
+    return res.send(publicFiles);
+  } catch (err) {
+    console.error(err);
+    return res.send(401).json(err);
+  }
 });
 
+// Signs all of the user's images, including public facing ones.
 router.get("/getuserurls", async (req, res) => {
+  let expiryDate = new Date();
+  // Set the expiry to tommorow
+  expiryDate.setDate(expiryDate.getDate() + 1);
   const fileconfig = {
     action: "read",
-    expires: "03-17-2025",
+    expires: expiryDate,
   };
   try {
     let curBucket = bucket;
@@ -109,24 +139,27 @@ router.post("/upload", multer.single("file"), (req, res, next) => {
   res.redirect("/");
 });
 
-router.post("/uploadmultiple", multer.any(), async (req, res) => {
+router.post("/uploadmultiple", multer.array('images', 10), async (req, res) => {
   if (!req.files) {
     return res.status(400).send("No file uploaded.");
   }
-  let curBucket = bucket;
   const uid = req.headers.uid.toLowerCase();
+  let curBucket = storage.bucket(uid);
   const publicupload = req.headers.publicupload;
+  let publicUpload = true;
   if (uid && publicupload == "false") {
-    try {
-      const exists = await bucketExists(uid);
-      if (!exists) {
-        await createBucket(uid);
-      }
-      curBucket = storage.bucket(uid);
-    } catch (err) {
-      console.error(err);
-    }
+    publicUpload = false;
   }
+  try {
+    const exists = await bucketExists(uid);
+    if (!exists) {
+      await createBucket(uid);
+    }
+    curBucket = storage.bucket(uid);
+  } catch (err) {
+    console.error(err);
+  }
+
   console.log(req.files.length);
   for (let i = 0; i < req.files.length; i++) {
     const blob = curBucket.file(req.files[i].originalname);
@@ -136,11 +169,20 @@ router.post("/uploadmultiple", multer.any(), async (req, res) => {
       next(err);
     });
 
-    blobStream.on("finish", () => {
+    blobStream.on("finish", async () => {
       // The public URL can be used to directly access the file via HTTP.
       const publicUrl = format(
         `https://storage.googleapis.com/${curBucket.name}/${blob.name}`
       );
+      if (publicUpload) {
+        console.log("Public file being created!");
+        try {
+          await blob.makePublic();
+          console.log("Made Public!");
+        } catch (err) {
+          console.error(err);
+        }
+      }
       console.log(publicUrl);
       // res.status(200).send(publicUrl);
     });
@@ -170,6 +212,19 @@ router.delete("/delete/:id", async (req, res) => {
       console.error(err);
       return res.send(401).json(err)
     }
+  }
+});
+
+router.post("/deletebatch", async (req, res) => {
+  const uid = req.headers.uid.toLowerCase();
+  try {
+    if (req.body.ids && uid) {
+      for (const id of req.body.ids) {
+
+      }
+    }
+  } catch (err) {
+    console.error(err);
   }
 });
 
