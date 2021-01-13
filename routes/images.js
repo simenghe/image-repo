@@ -1,11 +1,11 @@
 import { Storage } from "@google-cloud/storage";
 import { format } from "util";
 import { Router } from "express";
-import publicimagemodel from "../models/publicImage.js";
 import Multer from "multer";
-import { createBucket, bucketExists } from "../storage/storage.js";
+import { createBucket, bucketExists, generateName } from "../storage/storage.js";
 const router = Router();
 import { projectId, keyFilename } from "../creds.js";
+import { verifyToken } from "./auth.js";
 const storage = new Storage({ projectId, keyFilename });
 const bucket = storage.bucket("image-repo-bucket");
 
@@ -26,12 +26,10 @@ router.get("/getpublicurls", async (req, res) => {
   try {
     const buckets = await storage.getBuckets();
     const publicFiles = [];
-    console.log(buckets);
     for (const buck of buckets[0]) {
       const files = await buck.getFiles();
       for (const file of files[0]) {
         const isPublic = await file.isPublic();
-        console.log(isPublic[0]);
         if (isPublic[0]) {
           publicFiles.push({
             id: file.id,
@@ -52,6 +50,9 @@ router.get("/getpublicurls", async (req, res) => {
 
 // Signs all of the user's images, including public facing ones.
 router.get("/getuserurls", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token == null) return res.sendStatus(401);
   let expiryDate = new Date();
   // Set the expiry to tommorow
   expiryDate.setDate(expiryDate.getDate() + 1);
@@ -61,8 +62,9 @@ router.get("/getuserurls", async (req, res) => {
   };
   try {
     let curBucket = bucket;
-    if (req.headers.uid && req.headers.publicupload == "false") {
-      const uid = req.headers.uid.toLowerCase();
+    const uidObj = await verifyToken(token);
+    if (req.headers.publicupload == "false" && uidObj) {
+      const uid = uidObj.uid.toString().toLowerCase();
       console.log(`Authenticated with bucket ${uid}`);
       curBucket = storage.bucket(uid);
     }
@@ -89,23 +91,23 @@ router.get("/getuserurls", async (req, res) => {
 });
 
 
-router.get("/getfilesurls", async (req, res) => {
-  const googleBucketURL = `https://storage.googleapis.com/`;
-  try {
-    if (req.headers.publicupload == "false" && req.headers.uid) {
-      console.log(`Authenticated with uid ${req.headers.uid}`)
-      files = await getImageURLs(req.headers.uid.toLowerCase());
-    } else {
-      files = await getImages();
-    }
-    const filesURLs = files.map(
-      (file) => `${googleBucketURL}${file.bucket.id}/${file.id}`
-    );
-    return res.send(filesURLs);
-  } catch (err) {
-    return res.send(403).json("Getting File Error!");
-  }
-});
+// router.get("/getfilesurls", async (req, res) => {
+//   const googleBucketURL = `https://storage.googleapis.com/`;
+//   try {
+//     if (req.headers.publicupload == "false" && req.headers.uid) {
+//       console.log(`Authenticated with uid ${req.headers.uid}`)
+//       files = await getImageURLs(req.headers.uid.toLowerCase());
+//     } else {
+//       files = await getImages();
+//     }
+//     const filesURLs = files.map(
+//       (file) => `${googleBucketURL}${file.bucket.id}/${file.id}`
+//     );
+//     return res.send(filesURLs);
+//   } catch (err) {
+//     return res.send(403).json("Getting File Error!");
+//   }
+// });
 
 // Process the file upload and upload to Google Cloud Storage.
 router.post("/upload", multer.single("file"), (req, res, next) => {
@@ -140,6 +142,9 @@ router.post("/upload", multer.single("file"), (req, res, next) => {
 });
 
 router.post("/uploadmultiple", multer.array('images', 10), async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token == null) return res.sendStatus(401);
   if (!req.files) {
     return res.status(400).send("No file uploaded.");
   }
@@ -151,6 +156,8 @@ router.post("/uploadmultiple", multer.array('images', 10), async (req, res) => {
     publicUpload = false;
   }
   try {
+    const uidObj = await verifyToken(token);
+    const uid = uidObj.uid.toString().toLowerCase();
     const exists = await bucketExists(uid);
     if (!exists) {
       await createBucket(uid);
@@ -162,7 +169,10 @@ router.post("/uploadmultiple", multer.array('images', 10), async (req, res) => {
 
   console.log(req.files.length);
   for (let i = 0; i < req.files.length; i++) {
-    const blob = curBucket.file(req.files[i].originalname);
+    let fileName = req.files[i].originalname;
+    fileName = generateName(fileName);
+    console.log(fileName);
+    const blob = curBucket.file(fileName);
     const blobStream = blob.createWriteStream();
 
     blobStream.on("error", (err) => {
@@ -195,11 +205,16 @@ router.post("/uploadmultiple", multer.array('images', 10), async (req, res) => {
 
 
 router.delete("/delete/:id", async (req, res) => {
-  const uid = req.headers.uid.toLowerCase();
+  let uid = req.headers.uid.toLowerCase();
   const publicupload = req.headers.publicupload;
   console.log(req.params.id);
-  if (uid && publicupload == "false" && req.params.id) {
-    try {
+  try {
+    if (uid && publicupload == "false" && req.params.id) {
+      const authHeader = req.headers.authorization;
+      const token = authHeader && authHeader.split(' ')[1];
+      if (token == null) return res.sendStatus(401);
+      const uidObj = await verifyToken(token);
+      uid = uidObj.uid.toString().toLowerCase();
       const exists = await bucketExists(uid);
       if (!exists) {
         await createBucket(uid);
@@ -208,23 +223,40 @@ router.delete("/delete/:id", async (req, res) => {
       const deleted = await curBucket.file(req.params.id).delete();
       console.log(deleted)
       return res.send(deleted);
-    } catch (err) {
-      console.error(err);
-      return res.send(401).json(err)
     }
+    return res.send(401).json("Invalid");
+  } catch (err) {
+    console.error(err);
+    return res.send(401).json(err)
   }
-});
+}
+);
 
-router.post("/deletebatch", async (req, res) => {
-  const uid = req.headers.uid.toLowerCase();
+router.post("/removebatch", async (req, res) => {
   try {
-    if (req.body.ids && uid) {
-      for (const id of req.body.ids) {
-
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token == null) return res.sendStatus(401);
+    const uidObj = await verifyToken(token);
+    const uid = uidObj.uid.toString().toLowerCase();
+    if (req.headers.uid && req.body.ids && uid) {
+      console.log("rat")
+      const curBucket = storage.bucket(uid);
+      console.log(uid);
+      console.log(req.body.ids);
+      const results = [];
+      const files = await curBucket.getFiles();
+      const fileList = files[0];
+      for (const file of fileList) {
+        if (req.body.ids.includes(file.id)) {
+          results.push(await file.delete());
+        }
       }
+      return res.status(200).json(results);
     }
   } catch (err) {
     console.error(err);
+    return res.send(403).json(err);
   }
 });
 

@@ -13,21 +13,6 @@ router.get("/", async (req, res) => {
     res.json(exists);
 });
 
-router.get("/createBucket", async (req, res) => {
-    const bucketName = "good-morning-cane-9";
-    try {
-        const [bucket] = await storage.createBucket(bucketName, {
-            location,
-            [storageClass]: true,
-        });
-        console.log(`${bucket.name} created with ${storageClass} class in ${location}.`);
-        return res.send(bucket);
-    } catch (err) {
-        console.error(err);
-        return res.send(err);
-    }
-});
-
 router.post("/testauth", async (req, res) => {
     console.log(req.headers.uid);
     const authHeader = req.headers.authorization;
