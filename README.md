@@ -1,7 +1,7 @@
 # image-repo
 Shopify Developer Intern Challenge
 
-This is the backend repository
+This is the backend repository,
 a link to the frontend is
 [Frontend Repo](https://github.com/simenghe/image-repo-frontend)
 
