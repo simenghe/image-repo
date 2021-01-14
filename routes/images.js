@@ -91,23 +91,7 @@ router.get("/getuserurls", async (req, res) => {
 });
 
 
-// router.get("/getfilesurls", async (req, res) => {
-//   const googleBucketURL = `https://storage.googleapis.com/`;
-//   try {
-//     if (req.headers.publicupload == "false" && req.headers.uid) {
-//       console.log(`Authenticated with uid ${req.headers.uid}`)
-//       files = await getImageURLs(req.headers.uid.toLowerCase());
-//     } else {
-//       files = await getImages();
-//     }
-//     const filesURLs = files.map(
-//       (file) => `${googleBucketURL}${file.bucket.id}/${file.id}`
-//     );
-//     return res.send(filesURLs);
-//   } catch (err) {
-//     return res.send(403).json("Getting File Error!");
-//   }
-// });
+
 
 // Process the file upload and upload to Google Cloud Storage.
 router.post("/upload", multer.single("file"), (req, res, next) => {
