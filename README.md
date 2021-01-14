@@ -16,7 +16,7 @@ I used GCP App Engine, and AWS amplify for the deployments. :)
 
 # User accounts, public and private scope of images
 
-# To use, login to a google account, to upload images.
-# You can choose the scope (private/public) of the images.
+To use, login to a google account, to upload images.
+You can choose the scope (private/public) of the images.
 
 
