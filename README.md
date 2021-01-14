@@ -5,7 +5,7 @@ This is the backend repository,
 a link to the frontend is
 [Frontend Repo](https://github.com/simenghe/image-repo-frontend)
 
-I deployed a demo link at [Demo Link]https://master.d973ty5cuep5w.amplifyapp.com/
+I deployed a demo link at [Demo Link](https://master.d973ty5cuep5w.amplifyapp.com/)
 I used GCP App Engine, and AWS amplify for the deployments.
 
 # Planning Features
