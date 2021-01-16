@@ -7,6 +7,7 @@ a link to the frontend is
 
 I deployed a demo link at [Demo Link](https://master.d973ty5cuep5w.amplifyapp.com/)
 I used GCP App Engine, and AWS amplify for the deployments. :)
+To upload, login using a Google Account!
 
 # Planning Features
 ## Backend
